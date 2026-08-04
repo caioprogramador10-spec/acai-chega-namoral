@@ -275,6 +275,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 .field-row{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
 
+.icon-picker{
+  display:grid; grid-template-columns:repeat(auto-fill, minmax(38px,1fr)); gap:6px;
+  margin-top:8px;
+}
+.icon-picker button{
+  background:#fbf9ff; border:1.5px solid var(--card-border); border-radius:9px;
+  font-size:18px; padding:6px 0; line-height:1;
+}
+.icon-picker button:hover, .icon-picker button.selecionado{
+  border-color:var(--roxo-500); background:var(--gradiente-suave);
+}
+
 /* ============================================================
    DASHBOARD - KPI CARDS
    ============================================================ */
