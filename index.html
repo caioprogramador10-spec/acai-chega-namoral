@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sistema Açaí — Estoque, Vendas e Financeiro</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar-overlay" id="overlay"></div>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-emoji">🍇</div>
+      <div class="brand-text">
+        <div class="brand-name">Açaí Sistema</div>
+        <div class="brand-sub">Estoque, vendas &amp; caixa</div>
+      </div>
+    </div>
+
+    <div class="func-box">
+      <label>Quem está no caixa</label>
+      <select id="select-funcionario-ativo"></select>
+    </div>
+
+    <nav class="nav">
+      <button class="nav-item active" data-section="dashboard"><span class="ico">📊</span> Visão geral</button>
+      <button class="nav-item" data-section="pdv"><span class="ico">🛒</span> Vender (PDV)</button>
+      <button class="nav-item" data-section="estoque"><span class="ico">📦</span> Estoque</button>
+      <button class="nav-item" data-section="produtos"><span class="ico">🍨</span> Produtos &amp; preços</button>
+      <button class="nav-item" data-section="financeiro"><span class="ico">💰</span> Financeiro</button>
+      <button class="nav-item" data-section="clientes"><span class="ico">👤</span> Clientes</button>
+      <button class="nav-item" data-section="relatorios"><span class="ico">🧾</span> Relatórios</button>
+      <button class="nav-item" data-section="funcionarios"><span class="ico">🧑‍🍳</span> Funcionários</button>
+    </nav>
+
+    <div class="sidebar-footer">Uso interno da loja</div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+
+    <div class="topbar">
+      <button class="hamburger" id="btn-hamburger">☰</button>
+      <div>
+        <h1 id="page-title">Visão geral</h1>
+        <p id="page-subtitle">Resumo do dia, do mês e do que precisa de atenção.</p>
+      </div>
+      <button class="btn btn-outline" id="btn-relatorio-topo">🖨️ Gerar relatório</button>
+    </div>
+
+    <!-- ===================== DASHBOARD ===================== -->
+    <section class="section active" id="section-dashboard">
+      <div class="kpis">
+        <div class="kpi roxo">
+          <div class="kpi-icon">💵</div>
+          <div class="kpi-label">Faturamento do mês</div>
+          <div class="kpi-value" id="kpi-faturamento-mes">R$ 0,00</div>
+        </div>
+        <div class="kpi verde">
+          <div class="kpi-icon">🏦</div>
+          <div class="kpi-label">Saldo em caixa (total)</div>
+          <div class="kpi-value" id="kpi-saldo">R$ 0,00</div>
+        </div>
+        <div class="kpi amarelo">
+          <div class="kpi-icon">⚠️</div>
+          <div class="kpi-label">Materiais com estoque baixo</div>
+          <div class="kpi-value" id="kpi-estoque-baixo">0</div>
+        </div>
+        <div class="kpi rosa">
+          <div class="kpi-icon">📵</div>
+          <div class="kpi-label">Clientes sem comprar há 5+ dias</div>
+          <div class="kpi-value" id="kpi-clientes-inativos">0</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Últimas vendas</div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Hora</th><th>Cliente</th><th>Itens</th><th>Total</th></tr></thead>
+              <tbody id="tbody-ultimas-vendas"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Precisa de atenção</div>
+          <div id="lista-atencao"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PDV ===================== -->
+    <section class="section" id="section-pdv">
+      <div class="pdv-layout">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Toque para adicionar ao pedido</div>
+
+          <div class="field" style="max-width:360px;">
+            <label>Cliente (opcional)</label>
+            <input type="text" id="pdv-cliente-busca" placeholder="Nome ou WhatsApp do cliente...">
+            <div id="pdv-cliente-resultados"></div>
+          </div>
+
+          <div class="pdv-group-title">Tamanhos de açaí</div>
+          <div class="produto-grid" id="grid-acai"></div>
+
+          <div class="pdv-group-title">Complementos</div>
+          <div class="produto-grid" id="grid-complemento"></div>
+        </div>
+
+        <div class="ticket">
+          <h3>🧾 Pedido atual</h3>
+          <div class="ticket-sub" id="ticket-cliente-label">Sem cliente identificado</div>
+          <div class="ticket-items" id="ticket-items">
+            <div class="ticket-empty">Toque em um produto para começar o pedido</div>
+          </div>
+          <div class="ticket-total-row">
+            <span>Total</span>
+            <span id="ticket-total">R$ 0,00</span>
+          </div>
+          <div class="field" style="margin-top:14px;">
+            <label>Forma de pagamento</label>
+            <select id="pdv-pagamento">
+              <option>Dinheiro</option>
+              <option>Pix</option>
+              <option>Cartão de débito</option>
+              <option>Cartão de crédito</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-block" id="btn-finalizar-venda" style="margin-top:10px;">Finalizar venda</button>
+          <button class="btn btn-outline btn-block" id="btn-limpar-venda" style="margin-top:8px;">Limpar pedido</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ESTOQUE (materiais) ===================== -->
+    <section class="section" id="section-estoque">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Cadastrar material</div>
+          <form id="form-material">
+            <div class="field">
+              <label>Nome do material</label>
+              <input type="text" id="mat-nome" placeholder="Ex: Copo 500ml" required>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Categoria</label>
+                <input type="text" id="mat-categoria" placeholder="Ex: Embalagem">
+              </div>
+              <div class="field">
+                <label>Unidade</label>
+                <input type="text" id="mat-unidade" placeholder="un, kg, l..." value="un">
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Qtd. inicial</label>
+                <input type="number" step="0.01" id="mat-qtd-inicial" value="0">
+              </div>
+              <div class="field">
+                <label>Estoque mínimo</label>
+                <input type="number" step="0.01" id="mat-estoque-minimo" value="0">
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Cadastrar material</button>
+          </form>
+
+          <hr style="border:none; border-top:1px solid var(--card-border); margin:22px 0;">
+
+          <div class="card-title" style="margin-bottom:14px;"><span class="bar"></span> Registrar entrada / saída</div>
+          <form id="form-movimentacao">
+            <div class="field">
+              <label>Material</label>
+              <select id="mov-material" required></select>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Tipo</label>
+                <select id="mov-tipo" required>
+                  <option value="">Selecione</option>
+                  <option value="entrada">Entrada</option>
+                  <option value="saida">Saída</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Quantidade</label>
+                <input type="number" step="0.01" id="mov-qtd" required>
+              </div>
+            </div>
+            <div class="field">
+              <label>Observação</label>
+              <input type="text" id="mov-observacao" placeholder="Opcional">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Registrar movimentação</button>
+          </form>
+        </div>
+
+        <div class="stack">
+          <div class="card">
+            <div class="card-title">
+              <span class="bar"></span> Materiais em estoque
+              <span class="count" id="count-materiais">0</span>
+            </div>
+            <div class="search-box">
+              <span>🔍</span>
+              <input type="text" id="busca-materiais" placeholder="Filtrar por nome, categoria ou status...">
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Material</th><th>Categoria</th><th>Qtd. atual</th><th>Estoque mínimo</th><th>Status</th><th>Ações</th></tr></thead>
+                <tbody id="tbody-materiais"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">
+              <span class="bar"></span> Histórico de movimentações
+              <span class="count" id="count-movimentacoes">0</span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Data</th><th>Material</th><th>Tipo</th><th>Qtd.</th><th>Funcionário</th><th>Observação</th><th>Ações</th></tr></thead>
+                <tbody id="tbody-movimentacoes"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRODUTOS & PREÇOS ===================== -->
+    <section class="section" id="section-produtos">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Cadastrar produto de venda</div>
+          <form id="form-produto">
+            <div class="field">
+              <label>Nome do produto</label>
+              <input type="text" id="prod-nome" placeholder="Ex: Açaí 500ml" required>
+            </div>
+            <div class="field-row">
+              <div class="field">
+                <label>Categoria</label>
+                <select id="prod-categoria">
+                  <option value="acai">Tamanho de açaí</option>
+                  <option value="complemento">Complemento</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Preço (R$)</label>
+                <input type="number" step="0.01" id="prod-preco" placeholder="0.00" required>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Cadastrar produto</button>
+          </form>
+          <p style="font-size:12px; color:var(--texto-suave); margin-top:14px;">
+            💡 Depois de cadastrar, clique em "Ficha técnica" na lista ao lado para dizer quais materiais
+            esse produto consome do estoque (ex: Açaí 500ml consome 1 Copo 500ml + 1 Tampa).
+          </p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span class="bar"></span> Produtos cadastrados
+            <span class="count" id="count-produtos">0</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Produto</th><th>Categoria</th><th>Preço</th><th>Ações</th></tr></thead>
+              <tbody id="tbody-produtos"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FINANCEIRO ===================== -->
+    <section class="section" id="section-financeiro">
+      <div class="kpis" style="grid-template-columns:repeat(3,1fr);">
+        <div class="kpi verde">
+          <div class="kpi-label">Entradas do mês</div>
+          <div class="kpi-value" id="fin-entradas-mes">R$ 0,00</div>
+        </div>
+        <div class="kpi amarelo">
+          <div class="kpi-label">Saídas do mês</div>
+          <div class="kpi-value" id="fin-saidas-mes">R$ 0,00</div>
+        </div>
+        <div class="kpi roxo">
+          <div class="kpi-label">Saldo total em caixa</div>
+          <div class="kpi-value" id="fin-saldo-total">R$ 0,00</div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Lançar entrada / saída manual</div>
+          <form id="form-financeiro">
+            <div class="field">
+              <label>Tipo</label>
+              <select id="fin-tipo" required>
+                <option value="entrada">Entrada</option>
+                <option value="saida">Saída</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Valor (R$)</label>
+              <input type="number" step="0.01" id="fin-valor" required>
+            </div>
+            <div class="field">
+              <label>Categoria</label>
+              <input type="text" id="fin-categoria" placeholder="Ex: Compra de insumos, Aluguel...">
+            </div>
+            <div class="field">
+              <label>Descrição</label>
+              <input type="text" id="fin-descricao" placeholder="Opcional">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Lançar</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span class="bar"></span> Histórico financeiro
+            <span class="count" id="count-financeiro">0</span>
+          </div>
+          <div class="field-row" style="margin-bottom:8px;">
+            <div class="field">
+              <label>Tipo</label>
+              <select id="fin-filtro-tipo">
+                <option value="">Todos</option>
+                <option value="entrada">Entradas</option>
+                <option value="saida">Saídas</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Mês</label>
+              <input type="month" id="fin-filtro-mes">
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Data</th><th>Tipo</th><th>Categoria</th><th>Descrição</th><th>Valor</th><th>Funcionário</th><th>Ações</th></tr></thead>
+              <tbody id="tbody-financeiro"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CLIENTES ===================== -->
+    <section class="section" id="section-clientes">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Cadastrar cliente</div>
+          <form id="form-cliente">
+            <div class="field">
+              <label>Nome</label>
+              <input type="text" id="cli-nome" placeholder="Nome do cliente" required>
+            </div>
+            <div class="field">
+              <label>WhatsApp</label>
+              <input type="text" id="cli-whatsapp" placeholder="Ex: 21999998888">
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Cadastrar cliente</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span class="bar"></span> Clientes
+            <span class="count" id="count-clientes">0</span>
+          </div>
+          <div class="search-box">
+            <span>🔍</span>
+            <input type="text" id="busca-clientes" placeholder="Filtrar por nome...">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>WhatsApp</th><th>Última compra</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="tbody-clientes"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== RELATÓRIOS ===================== -->
+    <section class="section" id="section-relatorios">
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-title"><span class="bar"></span> Faturamento por mês</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Mês</th><th>Nº de vendas</th><th>Faturamento</th></tr></thead>
+            <tbody id="tbody-faturamento-mensal"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-3col">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Estoque baixo</div>
+          <div id="lista-relatorio-estoque"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Clientes inativos</div>
+          <div id="lista-relatorio-clientes"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Exportar</div>
+          <p style="font-size:13px; color:var(--texto-suave); margin-bottom:14px;">
+            Gere um PDF com o resumo financeiro do mês, estoque baixo e clientes inativos.
+          </p>
+          <button class="btn btn-primary btn-block" id="btn-gerar-pdf">📄 Gerar relatório em PDF</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FUNCIONÁRIOS ===================== -->
+    <section class="section" id="section-funcionarios">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title"><span class="bar"></span> Cadastrar funcionário</div>
+          <form id="form-funcionario">
+            <div class="field">
+              <label>Nome</label>
+              <input type="text" id="func-nome" placeholder="Nome do funcionário" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Cadastrar</button>
+          </form>
+          <p style="font-size:12px; color:var(--texto-suave); margin-top:14px;">
+            💡 Cada pessoa que opera um caixa deve escolher o próprio nome no menu lateral ("Quem está no caixa")
+            antes de vender ou lançar movimentações. Assim dá pra saber quem fez cada coisa, mesmo com vários
+            caixas funcionando ao mesmo tempo.
+          </p>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <span class="bar"></span> Funcionários
+            <span class="count" id="count-funcionarios">0</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nome</th><th>Status</th><th>Ações</th></tr></thead>
+              <tbody id="tbody-funcionarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ============ LIBS ============ -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
