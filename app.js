@@ -97,6 +97,22 @@ function emojiForProduto(nome, categoria){
   if(n.includes('amendoim')) return '🥜';
   return '➕';
 }
+function iconeProduto(p){
+  return (p.icone && p.icone.trim()) ? p.icone.trim() : emojiForProduto(p.nome, p.categoria);
+}
+const EMOJIS_SUGERIDOS = ['🍧','🍨','🍇','🍓','🍌','🥝','🍍','🥭','🍒','🥣','🥛','🍫','🍯','🥜','🍪','🌰','🍬','🧁','🍦','➕'];
+function renderIconPicker(containerId, inputId){
+  const cont = document.getElementById(containerId);
+  if(!cont) return;
+  cont.innerHTML = EMOJIS_SUGERIDOS.map(e => `<button type="button" data-emoji="${e}">${e}</button>`).join('');
+  cont.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById(inputId).value = btn.dataset.emoji;
+      cont.querySelectorAll('button').forEach(b => b.classList.remove('selecionado'));
+      btn.classList.add('selecionado');
+    });
+  });
+}
 
 function normalizarWhatsapp(numero){
   let n = (numero || '').replace(/\D/g, '');
@@ -366,7 +382,7 @@ function renderProdutos(){
   }
   tbody.innerHTML = produtos.map(p => `
     <tr>
-      <td>${emojiForProduto(p.nome, p.categoria)} ${escapeHtml(p.nome)}</td>
+      <td>${iconeProduto(p)} ${escapeHtml(p.nome)}</td>
       <td><span class="badge badge-neutro">${p.categoria === 'acai' ? 'Tamanho de açaí' : 'Complemento'}</span></td>
       <td>${formatMoney(p.preco)}</td>
       <td class="row-actions">
@@ -389,12 +405,23 @@ function editarProduto(id){
       </div>
       <div class="field"><label>Preço (R$)</label><input type="number" step="0.01" id="edit-prod-preco" value="${p.preco}"></div>
     </div>
+    <div class="field">
+      <label>Ícone</label>
+      <input type="text" id="edit-prod-icone" value="${escapeHtml(p.icone || '')}" maxlength="4">
+      <div class="icon-picker" id="icon-picker-editar"></div>
+    </div>
     <button class="btn btn-primary btn-block" onclick="salvarEdicaoProduto('${id}')">Salvar</button>
   `);
+  renderIconPicker('icon-picker-editar', 'edit-prod-icone');
 }
 window.editarProduto = editarProduto;
 async function salvarEdicaoProduto(id){
-  const payload = { nome: val('edit-prod-nome'), categoria: val('edit-prod-categoria'), preco: parseFloat(val('edit-prod-preco')) || 0 };
+  const payload = {
+    nome: val('edit-prod-nome'),
+    categoria: val('edit-prod-categoria'),
+    preco: parseFloat(val('edit-prod-preco')) || 0,
+    icone: val('edit-prod-icone') || null,
+  };
   const { error } = await supabaseClient.from('produtos_venda').update(payload).eq('id', id);
   if(error){ toast('Erro: ' + error.message, 'erro'); return; }
   fecharModal(); toast('Produto atualizado!');
@@ -470,7 +497,7 @@ function renderPDVGrids(){
   const botaoProduto = (p, classeExtra) => `
     <button type="button" class="produto-btn ${classeExtra || ''}" data-id="${p.id}" title="${temFichaTecnica(p.id) ? '' : 'Este produto não desconta estoque — configure a ficha técnica em Produtos & preços'}">
       ${temFichaTecnica(p.id) ? '' : '<span class="sem-ficha-badge">⚠</span>'}
-      <span class="emoji">${emojiForProduto(p.nome, p.categoria)}</span>
+      <span class="emoji">${iconeProduto(p)}</span>
       <span class="nome">${escapeHtml(p.nome)}</span>
       <span class="preco">${formatMoney(p.preco)}</span>
     </button>`;
@@ -934,6 +961,8 @@ function gerarRelatorioPDF(){
 // FORMULÁRIOS
 // ============================================================
 function setupForms(){
+  renderIconPicker('icon-picker-novo', 'prod-icone');
+
   document.getElementById('form-funcionario').addEventListener('submit', async (e) => {
     e.preventDefault();
     const nome = val('func-nome');
@@ -990,12 +1019,17 @@ function setupForms(){
 
   document.getElementById('form-produto').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const payload = { nome: val('prod-nome'), categoria: val('prod-categoria'), preco: parseFloat(val('prod-preco')) || 0 };
+    const payload = {
+      nome: val('prod-nome'), categoria: val('prod-categoria'),
+      preco: parseFloat(val('prod-preco')) || 0,
+      icone: val('prod-icone') || null,
+    };
     if(!payload.nome){ toast('Informe o nome do produto.', 'erro'); return; }
     const { error } = await supabaseClient.from('produtos_venda').insert(payload);
     if(error){ toast('Erro: ' + error.message, 'erro'); return; }
     toast('Produto cadastrado!');
     e.target.reset();
+    document.querySelectorAll('#icon-picker-novo button').forEach(b => b.classList.remove('selecionado'));
     await loadProdutos();
   });
 
