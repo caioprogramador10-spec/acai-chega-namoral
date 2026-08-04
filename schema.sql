@@ -57,10 +57,14 @@ create table if not exists produtos_venda (
   nome text not null,
   categoria text not null check (categoria in ('acai','complemento')),
   preco numeric(10,2) not null default 0,
+  icone text,
   ativo boolean not null default true,
   ordem integer not null default 0,
   created_at timestamptz not null default now()
 );
+
+-- se a tabela já existia (instalação anterior), garante a coluna nova:
+alter table produtos_venda add column if not exists icone text;
 
 -- ------------------------------------------------------------
 -- FICHA TÉCNICA (o que cada produto de venda consome do estoque
