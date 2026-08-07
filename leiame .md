@@ -1,4 +1,4 @@
-# Sistema Açaí — Estoque, Vendas (PDV), Financeiro e Clientes
+# Açaí Chega na Moral — Estoque, Vendas (PDV), Financeiro e Clientes
 
 Sistema completo em **HTML + CSS + JavaScript puro**, conectado ao **Supabase**.
 Funciona no computador e no celular (o menu vira um botão ☰ em telas pequenas).
