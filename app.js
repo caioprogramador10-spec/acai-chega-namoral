@@ -906,7 +906,7 @@ function gerarRelatorioPDF(){
   const hoje = new Date().toLocaleString('pt-BR');
 
   doc.setFontSize(18);
-  doc.text('Relatório — Sistema Açaí', 14, 18);
+  doc.text('Relatório — Açaí Chega na Moral', 14, 18);
   doc.setFontSize(10);
   doc.setTextColor(120);
   doc.text(`Gerado em ${hoje}`, 14, 25);
