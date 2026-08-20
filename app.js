@@ -836,7 +836,7 @@ function renderUltimasVendas(){
   const tbody = document.getElementById('tbody-ultimas-vendas');
   const top = vendas.slice(0, 8);
   if(!top.length){
-    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">Nenhuma venda registrada ainda.</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">Nenhuma venda registrada ainda.</div></td></tr>`;
     return;
   }
   tbody.innerHTML = top.map(v => {
@@ -846,9 +846,67 @@ function renderUltimasVendas(){
       <td>${escapeHtml(v.cliente_nome || 'Não identificado')}</td>
       <td>${itens}</td>
       <td>${formatMoney(v.total)}</td>
+      <td class="row-actions"><button class="btn-danger" onclick="cancelarVenda('${v.id}')">Cancelar venda</button></td>
     </tr>`;
   }).join('');
 }
+async function cancelarVenda(vendaId){
+  const venda = vendas.find(v => v.id === vendaId);
+  if(!venda) return;
+  if(!confirm(`Cancelar a venda de ${formatMoney(venda.total)} feita em ${formatDateTime(venda.created_at)}?\n\nIsso vai: remover o valor do financeiro, devolver os materiais consumidos ao estoque e apagar a venda. Essa ação não pode ser desfeita.`)) return;
+
+  try{
+    // 1. buscar os itens da venda
+    const { data: itens, error: itensErr } = await supabaseClient.from('venda_itens').select('*').eq('venda_id', vendaId);
+    if(itensErr) throw itensErr;
+
+    const func = funcionarioAtivoAtual();
+
+    // 2. devolver ao estoque o que foi consumido pela ficha técnica de cada item
+    for(const item of (itens || [])){
+      const insumos = produtoInsumosMap[item.produto_id] || [];
+      for(const insumo of insumos){
+        const material = materiais.find(m => m.id === insumo.material_id);
+        if(!material) continue;
+        const consumoTotal = Number(insumo.qtd_consumida) * Number(item.qtd);
+        const novaQtd = Number(material.qtd_atual) + consumoTotal;
+        await supabaseClient.from('materiais').update({ qtd_atual: novaQtd }).eq('id', material.id);
+        await supabaseClient.from('movimentacoes_estoque').insert({
+          material_id: material.id, material_nome: material.nome, tipo: 'entrada', qtd: consumoTotal,
+          funcionario_id: func.id, funcionario_nome: func.nome,
+          observacao: 'Estorno por cancelamento de venda', venda_id: vendaId,
+        });
+        material.qtd_atual = novaQtd;
+      }
+    }
+
+    // 3. remover o lançamento financeiro dessa venda
+    await supabaseClient.from('financeiro').delete().eq('venda_id', vendaId);
+
+    // 4. remover os itens e a venda
+    await supabaseClient.from('venda_itens').delete().eq('venda_id', vendaId);
+    const { error: delErr } = await supabaseClient.from('vendas').delete().eq('id', vendaId);
+    if(delErr) throw delErr;
+
+    // 5. se a venda tinha cliente, recalcular a última compra dele
+    if(venda.cliente_id){
+      const { data: ultimaRestante } = await supabaseClient
+        .from('vendas').select('created_at').eq('cliente_id', venda.cliente_id)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
+      await supabaseClient.from('clientes')
+        .update({ ultima_compra_at: ultimaRestante ? ultimaRestante.created_at : null })
+        .eq('id', venda.cliente_id);
+    }
+
+    toast('Venda cancelada e estoque estornado.');
+    await Promise.all([loadMateriais(), loadMovimentacoes(), loadFinanceiro(), loadClientes(), loadVendas()]);
+    recalcDashboard();
+    if(document.getElementById('section-relatorios').classList.contains('active')) renderRelatorios();
+  }catch(err){
+    toast('Erro ao cancelar venda: ' + err.message, 'erro');
+  }
+}
+window.cancelarVenda = cancelarVenda;
 function renderListaAtencao(){
   const baixos = materiais.filter(m => Number(m.qtd_atual) <= Number(m.estoque_minimo)).slice(0, 5);
   const inativos = clientes.filter(c => c.ultima_compra_at && daysSince(c.ultima_compra_at) >= 5).slice(0, 5);
